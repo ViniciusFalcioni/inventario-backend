@@ -1,18 +1,13 @@
 import express from 'express';
-import { getOrders, createOrder, updateOrder, deleteOrder } from '../controllers/orderController';
+import { getOrders, createOrder, updateOrder, deleteOrder, getOrderDetails } from '../controllers/orderController';
 
 const router = express.Router();
 
-// Rota para listar pedidos
+// Rotas
 router.get('/', getOrders);
-
-// Rota para criar um pedido
 router.post('/', createOrder);
-
-// Rota para atualizar um pedido específico
 router.put('/:id', updateOrder);
-
-// Rota para deletar um pedido específico
 router.delete('/:id', deleteOrder);
+router.get('/:orderId/details', getOrderDetails);
 
 export default router;

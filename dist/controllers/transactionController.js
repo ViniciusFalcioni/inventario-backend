@@ -1,51 +1,46 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTransaction = exports.updateTransaction = exports.createTransaction = exports.getTransactions = void 0;
+exports.getTransactions = void 0;
 const db_1 = __importDefault(require("../database/db"));
-// Listar todas as transações
-const getTransactions = (req, res) => {
-    db_1.default.all('SELECT * FROM Transacao', [], (err, rows) => {
-        if (err)
-            return res.status(500).json({ error: err.message });
-        res.json({ transacoes: rows });
-    });
-};
+const getTransactions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { tipo, dataInicio, dataFim } = req.query;
+        let query = 'SELECT * FROM Transacao WHERE 1=1';
+        const params = [];
+        if (tipo) {
+            query += ' AND tipo = ?';
+            params.push(tipo);
+        }
+        if (dataInicio) {
+            query += ' AND data >= ?';
+            params.push(dataInicio);
+        }
+        if (dataFim) {
+            query += ' AND data <= ?';
+            params.push(dataFim);
+        }
+        db_1.default.all(query, params, (err, rows) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ transacoes: rows });
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Erro ao obter transações' });
+    }
+});
 exports.getTransactions = getTransactions;
-// Criar uma nova transação
-const createTransaction = (req, res) => {
-    const { data, tipo, valor, produtoId, pedidoId } = req.body;
-    db_1.default.run('INSERT INTO Transacao (data, tipo, valor, produtoId, pedidoId) VALUES (?, ?, ?, ?, ?)', [data, tipo, valor, produtoId, pedidoId], function (err) {
-        if (err)
-            return res.status(500).json({ error: err.message });
-        res.status(201).json({ id: this.lastID, message: 'Transação criada com sucesso' });
-    });
-};
-exports.createTransaction = createTransaction;
-// Atualizar uma transação existente
-const updateTransaction = (req, res) => {
-    const { id } = req.params;
-    const { data, tipo, valor, produtoId, pedidoId } = req.body;
-    db_1.default.run('UPDATE Transacao SET data = ?, tipo = ?, valor = ?, produtoId = ?, pedidoId = ? WHERE id = ?', [data, tipo, valor, produtoId, pedidoId, id], function (err) {
-        if (err)
-            return res.status(500).json({ error: err.message });
-        if (this.changes === 0)
-            return res.status(404).json({ message: 'Transação não encontrada' });
-        res.json({ message: 'Transação atualizada com sucesso' });
-    });
-};
-exports.updateTransaction = updateTransaction;
-// Deletar uma transação
-const deleteTransaction = (req, res) => {
-    const { id } = req.params;
-    db_1.default.run('DELETE FROM Transacao WHERE id = ?', id, function (err) {
-        if (err)
-            return res.status(500).json({ error: err.message });
-        if (this.changes === 0)
-            return res.status(404).json({ message: 'Transação não encontrada' });
-        res.json({ message: 'Transação deletada com sucesso' });
-    });
-};
-exports.deleteTransaction = deleteTransaction;

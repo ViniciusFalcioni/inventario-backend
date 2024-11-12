@@ -12,14 +12,24 @@ export const getSuppliers = (req: Request, res: Response) => {
 // Criar um novo fornecedor
 export const createSupplier = (req: Request, res: Response) => {
     const { nome, cnpj, contato, endereco } = req.body;
-    db.run(
-        'INSERT INTO Fornecedor (nome, cnpj, contato, endereco) VALUES (?, ?, ?, ?)',
-        [nome, cnpj, contato, endereco],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ id: this.lastID, message: 'Fornecedor criado com sucesso' });
+
+    // Verificar se o CNPJ já existe no banco de dados
+    db.get('SELECT * FROM Fornecedor WHERE cnpj = ?', [cnpj], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Erro ao verificar CNPJ' });
+        if (row) {
+            return res.status(400).json({ error: 'CNPJ já cadastrado' });
         }
-    );
+
+        // Inserir fornecedor caso o CNPJ não exista
+        db.run(
+            'INSERT INTO Fornecedor (nome, cnpj, contato, endereco) VALUES (?, ?, ?, ?)',
+            [nome, cnpj, contato, endereco],
+            function (err) {
+                if (err) return res.status(500).json({ error: 'Erro ao inserir fornecedor' });
+                res.status(201).json({ id: this.lastID, message: 'Fornecedor cadastrado com sucesso' });
+            }
+        );
+    });
 };
 
 // Atualizar um fornecedor existente

@@ -1,48 +1,33 @@
 import { Request, Response } from 'express';
 import db from '../database/db';
 
-// Listar todas as transações
-export const getTransactions = (req: Request, res: Response) => {
-    db.all('SELECT * FROM Transacao', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ transacoes: rows });
-    });
-};
+export const getTransactions = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { tipo, dataInicio, dataFim } = req.query;
+        let query = 'SELECT * FROM Transacao WHERE 1=1';
+        const params: any[] = [];
 
-// Criar uma nova transação
-export const createTransaction = (req: Request, res: Response) => {
-    const { data, tipo, valor, produtoId, pedidoId } = req.body;
-    db.run(
-        'INSERT INTO Transacao (data, tipo, valor, produtoId, pedidoId) VALUES (?, ?, ?, ?, ?)',
-        [data, tipo, valor, produtoId, pedidoId],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ id: this.lastID, message: 'Transação criada com sucesso' });
+        if (tipo) {
+            query += ' AND tipo = ?';
+            params.push(tipo);
         }
-    );
-};
-
-// Atualizar uma transação existente
-export const updateTransaction = (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { data, tipo, valor, produtoId, pedidoId } = req.body;
-    db.run(
-        'UPDATE Transacao SET data = ?, tipo = ?, valor = ?, produtoId = ?, pedidoId = ? WHERE id = ?',
-        [data, tipo, valor, produtoId, pedidoId, id],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            if (this.changes === 0) return res.status(404).json({ message: 'Transação não encontrada' });
-            res.json({ message: 'Transação atualizada com sucesso' });
+        if (dataInicio) {
+            query += ' AND data >= ?';
+            params.push(dataInicio);
         }
-    );
-};
+        if (dataFim) {
+            query += ' AND data <= ?';
+            params.push(dataFim);
+        }
 
-// Deletar uma transação
-export const deleteTransaction = (req: Request, res: Response) => {
-    const { id } = req.params;
-    db.run('DELETE FROM Transacao WHERE id = ?', id, function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (this.changes === 0) return res.status(404).json({ message: 'Transação não encontrada' });
-        res.json({ message: 'Transação deletada com sucesso' });
-    });
+        db.all(query, params, (err, rows) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ transacoes: rows });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao obter transações' });
+    }
 };
